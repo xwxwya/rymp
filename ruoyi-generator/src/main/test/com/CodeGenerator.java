@@ -14,6 +14,7 @@ import com.baomidou.mybatisplus.generator.engine.FreemarkerTemplateEngine;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.BaseEntity;
 import com.ruoyi.common.mybatisPlus.MyBaseService;
+import com.ruoyi.common.mybatisPlus.MyBaseServiceImpl;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -121,7 +122,7 @@ public class CodeGenerator {
         strategy.setColumnNaming(NamingStrategy.underline_to_camel);
         strategy.setSuperEntityClass(BaseEntity.class);
         strategy.setSuperServiceClass(MyBaseService.class);
-        strategy.setSuperServiceImplClass(ServiceImpl.class);
+        strategy.setSuperServiceImplClass(MyBaseServiceImpl.class);
         strategy.setSuperMapperClass("com.ruoyi.common.mybatisPlus.MyBaseMapper");
 
         strategy.setEntityLombokModel(true);
