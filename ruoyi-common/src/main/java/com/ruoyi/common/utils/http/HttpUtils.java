@@ -1,10 +1,6 @@
 package com.ruoyi.common.utils.http;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
@@ -16,18 +12,38 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+
+import com.ruoyi.common.exception.CustomException;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.ruoyi.common.constant.Constants;
 import com.ruoyi.common.utils.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 通用http发送方法
  * 
  * @author ruoyi
  */
+@Component
 public class HttpUtils
 {
+    public static String path ;
+
+    @Value("${junction.uploadPath}")
+    public void setPath(String path) {
+        HttpUtils.path = path;
+    }
+
     private static final Logger log = LoggerFactory.getLogger(HttpUtils.class);
 
     /**
@@ -258,6 +274,70 @@ public class HttpUtils
         public boolean verify(String hostname, SSLSession session)
         {
             return true;
+        }
+    }
+
+    public static String uploadFileToJunction(MultipartFile file) throws IOException{
+        File toFile = null;
+        if (file.equals("") || file.getSize() <= 0) {
+            file = null;
+            throw new CustomException("请勿上传空文件");
+        } else {
+            InputStream ins = null;
+            ins = file.getInputStream();
+            long l = System.currentTimeMillis();
+            int v = (int) (1 + Math.random() * (999 - 1 + 1));
+            String originalFilename = file.getOriginalFilename();
+            String suffix = originalFilename.substring(originalFilename.lastIndexOf("."));
+            String fileName = "" + l + v + suffix;
+            toFile = new File(fileName);
+            inputStreamToFile(ins, toFile);
+            ins.close();
+        }
+
+
+        String responseText = null;
+        HttpPost post = null;
+        CloseableHttpClient client = null;
+        try {
+            client = HttpClients.createDefault();
+            post = new HttpPost(path);
+            MultipartEntity entity = new MultipartEntity();
+            FileBody fileBody = new FileBody(toFile);
+            entity.addPart("fileOptions.file", fileBody);
+            post.setEntity(entity);
+            responseText = client.execute(post, new BasicResponseHandler());
+//            LOGGER.debug("Post successful,response:"+responseText);
+        } catch (ClientProtocolException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (post != null) {
+                post.releaseConnection();
+            }
+            try {
+                client.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            toFile.delete();
+            return responseText;
+        }
+    }
+
+    private static void inputStreamToFile(InputStream ins, File file) {
+        try {
+            OutputStream os = new FileOutputStream(file);
+            int bytesRead = 0;
+            byte[] buffer = new byte[8192];
+            while ((bytesRead = ins.read(buffer, 0, 8192)) != -1) {
+                os.write(buffer, 0, bytesRead);
+            }
+            os.close();
+            ins.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

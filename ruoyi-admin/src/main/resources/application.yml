@@ -147,3 +147,6 @@ xss:
   excludes: /system/notice
   # 匹配链接
   urlPatterns: /system/*,/monitor/*,/tool/*
+
+junction:
+  uploadPath: http://weixin.junction.com.cn/jsUpload2/system/upload/app/save.shtml

@@ -1,7 +1,13 @@
 package com.ruoyi.web.controller.system;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.http.HttpUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,6 +22,7 @@ import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.framework.web.service.SysLoginService;
 import com.ruoyi.framework.web.service.SysPermissionService;
 import com.ruoyi.system.service.ISysMenuService;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 登录验证
@@ -82,5 +89,21 @@ public class SysLoginController
         Long userId = SecurityUtils.getUserId();
         List<SysMenu> menus = menuService.selectMenuTreeByUserId(userId);
         return AjaxResult.success(menuService.buildMenus(menus));
+    }
+
+    @PostMapping("/system/upload")
+    public AjaxResult upload(MultipartFile file) throws IOException {
+
+        //上传文件服务器
+        String s = HttpUtils.uploadFileToJunction(file);
+        JSONObject jsonObject = JSON.parseObject(s);
+        String http = jsonObject.getString("http");
+        if (!StringUtils.isBlank(http)){
+            if (http.startsWith("http://")){
+                http = "https://"+http.substring(7);
+                jsonObject.put("http",http);
+            }
+        }
+        return AjaxResult.success(null, jsonObject);
     }
 }
